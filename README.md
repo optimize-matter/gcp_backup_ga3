@@ -15,14 +15,14 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 
 ## Params  
 ### REQUIRE : 
-**viewId :** Id de vue GA 
-**country:** Pays associer à la vue
-**projectId :** ProjectId GCP
-**datasetId :** Nom du dataset
-**tableId :** Nom de la table
-**accountId :** Id du compte GA",
-**webPropertyID :** Id de la propriété UA",
-**dimensions :** list contenant le nom des dimensions mais sans le "ga:" ⚠ Pas plus de **9** dimensions
+**viewId :** Id de vue GA  
+**country:** Pays associer à la vue  
+**projectId :** ProjectId GCP  
+**datasetId :** Nom du dataset  
+**tableId :** Nom de la table  
+**accountId :** Id du compte GA",  
+**webPropertyID :** Id de la propriété UA",  
+**dimensions :** list contenant le nom des dimensions mais sans le "ga:" ⚠ Pas plus de **9** dimensions  
 *Exemple :*
 ```json
 "dimensions":[
@@ -31,7 +31,7 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
         {"dimension":"ga:date","column":"date"}
 ],
 ```
-**metrics :** list contenant le nom des metrics mais sans le "ga:"  ⚠ Pas plus de **10** metrics
+**metrics :** list contenant le nom des metrics mais sans le "ga:"  ⚠ Pas plus de **10** metrics  
 *Exemple :*
 ```json
 "metrics":[
