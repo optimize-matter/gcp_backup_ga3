@@ -20,8 +20,8 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **projectId :** ProjectId GCP  
 **datasetId :** Nom du dataset  
 **tableId :** Nom de la table  
-**accountId :** Id du compte GA",  
-**webPropertyID :** Id de la propriété UA",  
+**accountId :** Id du compte GA  
+**webPropertyID :** Id de la propriété UA  
 **dimensions :** list contenant le nom des dimensions mais sans le "ga:" ⚠ Pas plus de **9** dimensions  
 *Exemple :*
 ```json
