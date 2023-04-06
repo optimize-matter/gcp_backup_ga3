@@ -16,7 +16,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 ## Params  
 ### REQUIRE : 
 **viewId :** Id de vue GA  
-**country:** Pays associer à la vue  
 **projectId :** ProjectId GCP  
 **datasetId :** Nom du dataset  
 **tableId :** Nom de la table  
@@ -49,7 +48,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Acquisition**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -80,7 +78,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Event**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -109,7 +106,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Product**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -137,7 +133,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Funnel**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -160,7 +155,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Transaction**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -188,7 +182,6 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **Page**
 ```json
 "view_id":"34534524",
-"country":"FR",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
