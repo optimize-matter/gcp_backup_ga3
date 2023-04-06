@@ -157,3 +157,31 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:pageviews","column":"Pageviews"}
 ]
 ```
+**Transaction**
+```json
+"view_id":"34534524",
+"country":"FR",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Acquisition",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:transactionId","column":"Transaction_Id"},
+    {"dimension":"ga:orderCouponCode","column":"Order_Coupon_Code"},
+    {"dimension":"ga:checkoutOptions","column":"Checkout_Options"},
+    {"dimension":"ga:affiliation","column":"Affiliation"},
+    {"dimension":"ga:sessionsToTransaction","column":"Sessions_To_Transaction"},
+    {"dimension":"ga:daysToTransaction","column":"Days_To_Transaction"}
+],
+"metrics":[
+    {"metric":"ga:transactions","column":"Transactions"},
+    {"metric":"ga:transactionsPerSession","column":"Transactions_Per_Session"},
+    {"metric":"ga:transactionRevenue","column":"Transaction_Revenue"},
+    {"metric":"ga:revenuePerTransaction","column":"Revenue_Per_Transaction"},
+    {"metric":"ga:transactionShipping","column":"Transaction_Shipping"},
+    {"metric":"ga:transactionTax","column":"Transaction_Tax"},
+    {"metric":"ga:totalValue","column":"Total_Value"}
+]
+```
