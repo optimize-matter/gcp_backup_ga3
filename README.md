@@ -92,8 +92,8 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"dimension":"ga:pagePath","column":"Page_Path"},
     {"dimension":"ga:deviceCategory","column":"Device_Category"},
     {"dimension":"ga:landingPagePath","column":"Landing_Page_Path"},
-    {"dimension":"ga:eventCategory","column":"Event_Category"}
-    {"dimension":"ga:eventAction","column":"Event_Action"}
+    {"dimension":"ga:eventCategory","column":"Event_Category"},
+    {"dimension":"ga:eventAction","column":"Event_Action"},
     {"dimension":"ga:eventLabel","column":"Event_Label"}
 ],
 "metrics":[
@@ -103,6 +103,34 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:eventValue","column":"Event_Value"},
     {"metric":"ga:avgEventValue","column":"Avg_Event_Value"},
     {"metric":"ga:sessionsWithEvent","column":"Session_With_Event"},
-    {"metric":"ga:eventsPerSessionWithEvent","column":"Events_Per_Session_With_Event"},
+    {"metric":"ga:eventsPerSessionWithEvent","column":"Events_Per_Session_With_Event"}
+]
+```
+**Product**
+```json
+"view_id":"34534524",
+"country":"FR",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Acquisition",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:transactionId","column":"Transaction_Id"},
+    {"dimension":"ga:productSku","column":"Product_Sku"},
+    {"dimension":"ga:productName","column":"Product_Name"},
+    {"dimension":"ga:productListName","column":"Product_List_Name"},
+    {"dimension":"ga:productCategoryHierarchy","column":"Product_Category_Hierarchy"}
+],
+"metrics":[
+    {"metric":"ga:itemRevenue","column":"Item_Revenue"},
+    {"metric":"ga:itemQuantity","column":"Item_Quantity"},
+    {"metric":"ga:productListViews","column":"Product_List_Views"},
+    {"metric":"ga:productListClicks","column":"Product_List_Clicks"},
+    {"metric":"ga:productDetailViews","column":"Product_Detail_Views"},
+    {"metric":"ga:productAddsToCart","column":"Product_Adds_To_Cart"},
+    {"metric":"ga:productCheckouts","column":"Product_Checkouts"},
+    {"metric":"ga:uniquePurchases","column":"Unique_Purchases"}
 ]
 ```
