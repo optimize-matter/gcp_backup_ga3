@@ -96,8 +96,8 @@ def createSchema(dimensions,metrics,dims):
             schema.append(bigquery.SchemaField(dim['column'],"FLOAT",mode="NULLABLE"))
         else:
             schema.append(bigquery.SchemaField(dim['column'],"STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("view_id","STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("country","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("View_id","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("Web_Property_Name","STRING",mode="NULLABLE"))
     return schema
 
 def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringFields,dimensions,schema):
@@ -154,7 +154,7 @@ def verifEchantillion(rsp):
         else:
             return False
 
-def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,country):
+def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name):
     print("Traitement des données en cours...")
     #Récupération des dimensions
     rows = []
@@ -202,8 +202,8 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,country):
 
     # Renomage des colonnes (pour retirer le ":ga")
     rows.columns = dimensionsCol+metricsCol
-    rows = rows.assign(view_id=[view_id]*len(rows))
-    rows = rows.assign(country=[country]*len(rows))
+    rows = rows.assign(View_id=[view_id]*len(rows))
+    rows = rows.assign(Web_Property_Name=[Web_Property_Name]*len(rows))
     return rows
 
 def addToBQ(bq,PROJECT_ID,DATASET_ID,TABLE_ID,data,dimensionLabel):
@@ -258,10 +258,19 @@ def verifOptionRequest(req):
     return clusteringFields,pageToken,startDate,endDate,
 
 def verifRequireRequest(req):
-    if 'country' in req and 'viewId' in req and 'projectId' in req and 'datasetId' in req and 'tableId' in req and 'dimensions' in req and 'metrics' in req:
+    if 'viewId' in req and 'projectId' in req and 'datasetId' in req and 'tableId' in req and 'dimensions' in req and 'metrics' in req:
         return 'ok'
     else:
         return 'ko'
+    
+def getWebPropertyName(management,web_property_id):
+    rsp = management.management().accountSummaries().list().execute()
+    for item in rsp['items']:
+        for web_propertys in item['webProperties']:
+            if web_propertys['id'] == web_property_id:
+                return web_propertys['name']
+    return 'erreur'
+
 
 def main(req):
     req = req.get_json()# Récupération des paramétres du body
@@ -275,6 +284,10 @@ def main(req):
     metadata = initialize_analyticsMetadata(CREDENTIALS)# Initialisation de l'API MetaData
     analytics = initialize_analyticsreporting(CREDENTIALS)# Initialisation de l'API GA
     bq = initialize_bigquery(CREDENTIALS, req['projectId'])# Initialisation de BQ
+
+    Web_Property_Name = getWebPropertyName(management,req['webPropertyID'])
+    if Web_Property_Name == 'erreur':
+        return f"ko le crédential n'a pas accés au compte : {req['webPropertyID']}"
 
     """Mise en forme des dimensions et metrics"""
     allFormatedDimsAndMets = formatDimMet(req['dimensions'],req['metrics'],metadata)
@@ -297,7 +310,8 @@ def main(req):
             else:#Le rslt n'est pas échantillonné 
                 rowsCount+= response['reports'][0]['data']['rowCount']
                 print("Résultat non échantillonné")
-                data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],req['country'])# Traitement des données (mise en dataFrame & changement des type de données)
+                data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
+                print(data)
                 addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
                 pageToken = verifPageToken(response)#On regarde si il y a un pageToken
                 if pageToken == None:#Si il n'y en a pas 
