@@ -2,8 +2,10 @@ from googleapiclient.discovery import build
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
+import asyncio
+import time
 
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
@@ -268,9 +270,36 @@ def getWebPropertyName(management,web_property_id):
     for item in rsp['items']:
         for web_propertys in item['webProperties']:
             if web_propertys['id'] == web_property_id:
-                print(web_propertys)
                 return web_propertys['name']
     return 'erreur'
+
+async def make_request(analytics, body):
+    # Faire une requête ici
+    print(body)
+    # response = analytics.reports().batchGet(body=body).execute()
+    # print(response)
+    await asyncio.sleep(0.1) # Attendre 0,1 seconde entre chaque requête
+
+async def limited_requests(analytics,dates,body):
+    
+    tasks = []
+    start_time = time.monotonic()
+    for date in dates:
+        print(date)
+        date = datetime.strptime(date,'%Y-%m-%d')
+        end_date = date+timedelta(days=1)
+        date = date.strftime('%Y-%m-%d')
+        end_date = end_date.strftime('%Y-%m-%d')
+        body['reportRequests'][0]['dateRanges'] = [{'startDate': date, 'endDate': end_date}]
+        task = asyncio.create_task(make_request(analytics,body))
+        tasks.append(task)
+        if len(tasks) == 10: # Limiter le nombre de tâches à 10
+            await asyncio.gather(*tasks)
+            tasks = []
+    if tasks: # Attendre que les dernières tâches soient terminées
+        await asyncio.gather(*tasks)
+    end_time = time.monotonic()
+    print(f"Temps total d'exécution : {end_time - start_time} secondes")
 
 
 def main(req):
@@ -302,38 +331,69 @@ def main(req):
     allFormatedDimsAndMets += formatCustomDimMet(req['dimensions'],req['metrics'],management,req['accountId'],req['webPropertyID'])
     # schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
     # db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
-    db = 'ok'
-    nombreRequête = 0 #Pour compter le nombre de requêtes  
-    rowsCount = 0 #Pour connaître le nbr de ligne
-    report_end_date = None
-    if db =='ok':
-        while startDate != endDate:#Enfin de boucle on assigne la date de fin du body à startDate et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
-            nombreRequête+=1
-            if report_end_date == None:
-                reportEndDate = endDate
-            else:
-                reportEndDate = report_end_date
-            print("Dates concernées :",startDate, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
-            body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken) # Construction du body avec les paramétres de la requéte
-            print(body)
-            response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
-            print(list(response['reports'][0]['data']))
-            if verifEchantillion(response):# Si le rslt est échantilloner 
-                report_end_date = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
-                report_end_date = report_end_date.strftime("%Y-%m-%d")
-                print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
-            else:#Le rslt n'est pas échantillonné 
-                if 'rowCount' in response['reports'][0]['data']:
-                    rowsCount+= response['reports'][0]['data']['rowCount']
-                else:
-                    rowsCount+= 100000
-                print("Résultat non échantillonné")
-                data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
-                print(data)
-                # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
-                pageToken = verifPageToken(response)#On regarde si il y a un pageToken
-                if pageToken == None:#Si il n'y en a pas 
-                    print("Prochaine page :",pageToken)
-                    startDate = reportEndDate #On passe à la prochaine date 
-    print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
+
+    start_date_str = '2022-12-28'
+    end_date_str = '2023-01-03'
+
+    # Convertir les chaînes de caractères en objets datetime
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+    # Créer une liste de dates entre les deux dates
+    date_list = []
+    while start_date <= end_date:
+        date_list.append(start_date.strftime('%Y-%m-%d'))
+        start_date += timedelta(days=1)
+
+    print(date_list)
+
+    dimId=[{"name":dimension['dimension']} for dimension in req['dimensions']]
+    metId=[{"expression":metric['metric']} for metric in req['metrics']]
+    body= {'reportRequests': 
+                [
+                    {'viewId': req['viewId'],
+                    'dimensions':dimId,
+                    'metrics':metId,
+                    'pageSize':"100000",
+                    # 'pageToken':pagetoken
+                    },
+                ],
+        }
+    
+    asyncio.run(limited_requests(analytics,date_list,body))
+
+    # db = 'ok'
+    # nombreRequête = 0 #Pour compter le nombre de requêtes  
+    # rowsCount = 0 #Pour connaître le nbr de ligne
+    # report_end_date = None
+    # if db =='ok':
+    #     while startDate != endDate:#Enfin de boucle on assigne la date de fin du body à startDate et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
+    #         nombreRequête+=1
+    #         if report_end_date == None:
+    #             reportEndDate = endDate
+    #         else:
+    #             reportEndDate = report_end_date
+    #         print("Dates concernées :",startDate, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
+    #         body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken) # Construction du body avec les paramétres de la requéte
+    #         print(body)
+    #         response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
+    #         print(list(response['reports'][0]['data']))
+    #         if verifEchantillion(response):# Si le rslt est échantilloner 
+    #             report_end_date = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
+    #             report_end_date = report_end_date.strftime("%Y-%m-%d")
+    #             print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
+    #         else:#Le rslt n'est pas échantillonné 
+    #             if 'rowCount' in response['reports'][0]['data']:
+    #                 rowsCount+= response['reports'][0]['data']['rowCount']
+    #             else:
+    #                 rowsCount+= 100000
+    #             print("Résultat non échantillonné")
+    #             data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
+    #             print(data)
+    #             # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
+    #             pageToken = verifPageToken(response)#On regarde si il y a un pageToken
+    #             if pageToken == None:#Si il n'y en a pas 
+    #                 print("Prochaine page :",pageToken)
+    #                 startDate = reportEndDate #On passe à la prochaine date 
+    # print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
     return 'ok'
