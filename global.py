@@ -142,7 +142,8 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pagetoke
                     'dimensions':dimId,
                     'metrics':metId,
                     'pageSize':"100000",
-                    'pageToken':pagetoken},
+                    'pageToken':pagetoken
+                    },
                 ],
         }
     return body
@@ -167,7 +168,8 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
     metricsName = []
     for metricsHeader in rsp['reports'][0]['columnHeader']['metricHeader']['metricHeaderEntries']:
         metricsName.append(metricsHeader['name'])
-
+    if 'totals' in rsp['reports'][0]['data']:
+        print(rsp['reports'][0]['data']['totals'])
     # Transformation des données en list de dico, peux importe l'ordre des dimensions quand on les à défini
     for r in rsp['reports'][0]['data']['rows']:
         row = {}
@@ -317,6 +319,7 @@ def main(req):
             body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken) # Construction du body avec les paramétres de la requéte
             print(body)
             response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
+            print(response)
             print(list(response['reports'][0]['data']))
             if verifEchantillion(response):# Si le rslt est échantilloner 
                 report_end_date = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
