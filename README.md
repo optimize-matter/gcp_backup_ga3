@@ -77,3 +77,32 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:pageviewsPerSession","column":"Pageviews_Per_Session"}
 ]
 ```
+**Event**
+```json
+"view_id":"34534524",
+"country":"FR",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Acquisition",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:sourceMedium","column":"Source_Medium"},
+    {"dimension":"ga:pagePath","column":"Page_Path"},
+    {"dimension":"ga:deviceCategory","column":"Device_Category"},
+    {"dimension":"ga:landingPagePath","column":"Landing_Page_Path"},
+    {"dimension":"ga:eventCategory","column":"Event_Category"}
+    {"dimension":"ga:eventAction","column":"Event_Action"}
+    {"dimension":"ga:eventLabel","column":"Event_Label"}
+],
+"metrics":[
+    {"metric":"ga:sessions","column":"Sessions"},
+    {"metric":"ga:totalEvents","column":"Total_Events"},
+    {"metric":"ga:uniqueEvents","column":"Unique_Events"},
+    {"metric":"ga:eventValue","column":"Event_Value"},
+    {"metric":"ga:avgEventValue","column":"Avg_Event_Value"},
+    {"metric":"ga:sessionsWithEvent","column":"Session_With_Event"},
+    {"metric":"ga:eventsPerSessionWithEvent","column":"Events_Per_Session_With_Event"},
+]
+```
