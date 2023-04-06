@@ -134,3 +134,26 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:uniquePurchases","column":"Unique_Purchases"}
 ]
 ```
+**Funnel**
+```json
+"view_id":"34534524",
+"country":"FR",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Acquisition",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:shoppingStage","column":"Shopping_Stage"},
+    {"dimension":"ga:browser","column":"Browser"},
+    {"dimension":"ga:userType","column":"User_Type"},
+    {"dimension":"ga:deviceCategory","column":"Device_Category"}
+],
+"metrics":[
+    {"metric":"ga:sessions","column":"Sessions"},
+    {"metric":"ga:users","column":"Users"},
+    {"metric":"ga:newUsers","column":"New_Users"},
+    {"metric":"ga:pageviews","column":"Pageviews"}
+]
+```
