@@ -199,7 +199,7 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"dimension":"ga:pagePath","column":"Page_Path"},
     {"dimension":"ga:pageTitle","column":"Page_Title"},
     {"dimension":"ga:landingPagePath","column":"Landing_Page_Path"},
-    {"dimension":"ga:exitPagePath","column":"Exit_Page_Path"},
+    {"dimension":"ga:exitPagePath","column":"Exit_Page_Path"}
 ],
 "metrics":[
     {"metric":"ga:sessions","column":"Sessions"},
