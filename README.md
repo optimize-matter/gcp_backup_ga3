@@ -185,3 +185,29 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:totalValue","column":"Total_Value"}
 ]
 ```
+**Page**
+```json
+"view_id":"34534524",
+"country":"FR",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Acquisition",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:pagePath","column":"Page_Path"},
+    {"dimension":"ga:pageTitle","column":"Page_Title"},
+    {"dimension":"ga:landingPagePath","column":"Landing_Page_Path"},
+    {"dimension":"ga:exitPagePath","column":"Exit_Page_Path"},
+],
+"metrics":[
+    {"metric":"ga:sessions","column":"Sessions"},
+    {"metric":"ga:users","column":"Users"},
+    {"metric":"ga:pageviews","column":"Pageviews"},
+    {"metric":"ga:uniquePageviews","column":"Unique_Pageviews"},
+    {"metric":"ga:exits","column":"Exits"},
+    {"metric":"ga:transactionTax","column":"Transaction_Tax"},
+    {"metric":"ga:avgTimeOnPage","column":"Avg_Time_On_Page"}
+]
+```
