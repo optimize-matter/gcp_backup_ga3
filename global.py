@@ -4,6 +4,7 @@ from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 from datetime import datetime
 import pandas as pd
+import time
 
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
@@ -131,7 +132,7 @@ def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringField
 
     return 'ok'
 
-def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pagetoken=None):
+def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize,pagetoken=None):
     
     dimId=[{"name":dimension['dimension']} for dimension in dimensionLabel]
     metId=[{"expression":metric['metric']} for metric in metricsLabel]
@@ -141,15 +142,18 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pagetoke
                     'dateRanges': [{'startDate': startDate, 'endDate': endDate}],
                     'dimensions':dimId,
                     'metrics':metId,
-                    'pageSize':"100000",
+                    'pageSize':f"{pageSize}",
                     'pageToken':pagetoken
                     },
                 ],
         }
     return body
 
-def verifEchantillion(rsp):
-    for report in rsp.get('reports', []):
+def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel):
+    body = constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,1,pagetoken=None)
+    print('body temporaire : ', body)
+    response = analytics.reports().batchGet(body=body).execute()
+    for report in response.get('reports', []):
         if report.get('data', {}).get('samplesReadCounts'):
             return True
         else:
@@ -168,8 +172,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
     metricsName = []
     for metricsHeader in rsp['reports'][0]['columnHeader']['metricHeader']['metricHeaderEntries']:
         metricsName.append(metricsHeader['name'])
-    if 'totals' in rsp['reports'][0]['data']:
-        print(rsp['reports'][0]['data']['totals'])
+
     # Transformation des données en list de dico, peux importe l'ordre des dimensions quand on les à défini
     for r in rsp['reports'][0]['data']['rows']:
         row = {}
@@ -276,6 +279,7 @@ def getWebPropertyName(management,web_property_id):
 
 
 def main(req):
+    start_time = time.monotonic()
     req = req.get_json()# Récupération des paramétres du body
     """Vérification des différent paramétre du body"""
     if verifRequireRequest(req) != 'ok':
@@ -288,13 +292,6 @@ def main(req):
     analytics = initialize_analyticsreporting(CREDENTIALS)# Initialisation de l'API GA
     bq = initialize_bigquery(CREDENTIALS, req['projectId'])# Initialisation de BQ
 
-    # profile = management.management().profiles().get(
-    #   accountId=req['accountId'],
-    #   webPropertyId=req['webPropertyID'],
-    #   profileId=req['viewId']).execute()
-    
-    # print(profile)
-
     Web_Property_Name = getWebPropertyName(management,req['webPropertyID'])
     if Web_Property_Name == 'erreur':
         return f"ko le crédential n'a pas accés au compte : {req['webPropertyID']}"
@@ -302,8 +299,8 @@ def main(req):
     """Mise en forme des dimensions et metrics"""
     allFormatedDimsAndMets = formatDimMet(req['dimensions'],req['metrics'],metadata)
     allFormatedDimsAndMets += formatCustomDimMet(req['dimensions'],req['metrics'],management,req['accountId'],req['webPropertyID'])
-    # schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
-    # db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
+    schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
+    db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
     db = 'ok'
     nombreRequête = 0 #Pour compter le nombre de requêtes  
     rowsCount = 0 #Pour connaître le nbr de ligne
@@ -316,27 +313,33 @@ def main(req):
             else:
                 reportEndDate = report_end_date
             print("Dates concernées :",startDate, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
-            body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken) # Construction du body avec les paramétres de la requéte
-            print(body)
-            response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
-            print(response)
-            print(list(response['reports'][0]['data']))
-            if verifEchantillion(response):# Si le rslt est échantilloner 
+            if verifEchantillion(analytics,req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics']):# Si le rslt est échantilloner 
+                prev_end_date = report_end_date
                 report_end_date = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
                 report_end_date = report_end_date.strftime("%Y-%m-%d")
                 print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
             else:#Le rslt n'est pas échantillonné 
+                body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],100000,pageToken) # Construction du body avec les paramétres de la requéte
+                response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
+                # print(list(response['reports'][0]['data']))
                 if 'rowCount' in response['reports'][0]['data']:
                     rowsCount+= response['reports'][0]['data']['rowCount']
-                else:
-                    rowsCount+= 100000
-                print("Résultat non échantillonné")
-                data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
-                print(data)
-                # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
-                pageToken = verifPageToken(response)#On regarde si il y a un pageToken
-                if pageToken == None:#Si il n'y en a pas 
+                    print("Résultat non échantillonné")
+                    data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
+                    addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
+                    pageToken = verifPageToken(response)#On regarde si il y a un pageToken
                     print("Prochaine page :",pageToken)
+                    if pageToken == None:#Si il n'y en a pas 
+                        startDate = reportEndDate #On passe à la prochaine date 
+                        if report_end_date == prev_end_date:
+                            report_end_date = None
+                        else:
+                            report_end_date = prev_end_date
+                else:
                     startDate = reportEndDate #On passe à la prochaine date 
+                    report_end_date = None
+                    print("Pas de data")
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
+    end_time = time.monotonic()
+    print(f"fini en {(end_time - start_time)/60} minutes")
     return 'ok'
