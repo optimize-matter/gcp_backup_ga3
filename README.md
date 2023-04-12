@@ -2,7 +2,7 @@
 Permets de faire des backups sur les dimensions et metrics de son choix. Se référer au [dev tools](https://ga-dev-tools.web.app/dimensions-metrics-explorer/) pour connaître la compatibilité des metrics et dimensions entre eux. 
 
 ## Setup 
-Copier le script et le requirement dans une cloud function ayant **512MB de mémoire**. Ajoutere le crédential sur le GA avec le role viewer. Faire une requête POST avec un body, voir la section "Params"
+Copier le script et le requirement dans une cloud function ayant **512MB de mémoire**. Ajouter le credential sur le GA avec le role viewer. Faire une requête POST avec un body, voir la section "Params"
 
 ## Features
 
