@@ -39,7 +39,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ]
 ```
 ### OPTIONNAL :
-**clusteringFields :** list des champs pour cluster la table BQ ('view_id' et 'country' par défaut)  
+**clusteringFields :** list des champs pour cluster la table BQ ('viewId' et 'country' par défaut)  
 **startDate :** string (YYYY-MM-DD, 2005-01-01 par défaut)  
 **endDate :** string (YYYY-MM-DD, "today" par défaut)  
 **pageToken :** string (en cas d'arrêt prématurer écrire le pageToken qui était en cours de traitement)
@@ -47,7 +47,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ## Les rapports :
 **⚠ Ancien rapport user**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"User",
@@ -77,7 +77,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 
 **⚠ Ancien rapport event**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Event",
@@ -104,7 +104,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 
 **Acquisition**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -134,7 +134,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ```
 **Event**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -162,7 +162,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ```
 **Product**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -189,7 +189,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ```
 **Funnel**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -211,7 +211,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ```
 **Transaction**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
@@ -238,7 +238,7 @@ Copier le script et le requirement dans une cloud function ayant **1G de mémoir
 ```
 **Page**
 ```json
-"view_id":"34534524",
+"viewId":"34534524",
 "projectId":"optimize-matter-fr-ga4",
 "datasetId":"GA3_Backup",
 "tableId":"Acquisition",
