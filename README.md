@@ -2,7 +2,7 @@
 Permets de faire des backups sur les dimensions et metrics de son choix. Se référer au [dev tools](https://ga-dev-tools.web.app/dimensions-metrics-explorer/) pour connaître la compatibilité des metrics et dimensions entre eux. 
 
 ## Setup 
-Copier le script et le requirement dans une cloud function ayant **512MB de mémoire**. Ajouter le credential sur le GA avec le role viewer. Faire une requête POST avec un body, voir la section "Params"
+Copier le script et le requirement dans une cloud function ayant **1G de mémoire**. Ajouter le credential sur le GA avec le role viewer et activer les APIs (Analytics et Analytics reporting) dans le projet GCP. Faire une requête POST avec un body, voir la section "Params"
 
 ## Features
 
@@ -71,7 +71,7 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
     {"metric":"ga:bounceRate","column":"Bounce_Rate"},
     {"metric":"ga:transactions","column":"Transactions"},
     {"metric":"ga:transactionRevenue","column":"Transaction_Revenue"},
-    {"metric":"ga:transactionsPerSession","column":"Transactions_Per_Session"},
+    {"metric":"ga:transactionsPerSession","column":"Transactions_Per_Session"}
 ]
 ```
 
