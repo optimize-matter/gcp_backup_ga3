@@ -45,6 +45,36 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 **pageToken :** string (en cas d'arrêt prématurer écrire le pageToken qui était en cours de traitement)
 
 ## Les rapports :
+**⚠ Ancien rapport user**
+```json
+"view_id":"34534524",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"User",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:sourceMedium","column":"Source_Medium"},
+    {"dimension":"ga:deviceCategory","column":"Device_Category"},
+    {"dimension":"ga:country","column":"Country"},
+    {"dimension":"ga:campaign","column":"Campaign"},
+    {"dimension":"ga:userType","column":"User_Type"},
+    {"dimension":"ga:browser","column":"Browser"},
+    {"dimension":"ga:pagePath","column":"Page_Path"},
+    {"dimension":"ga:sessionCount","column":"Session_Count"}
+],
+"metrics":[
+    {"metric":"ga:sessions","column":"Sessions"},
+    {"metric":"ga:users","column":"Users"},
+    {"metric":"ga:newUsers","column":"New_Users"},
+    {"metric":"ga:bounceRate","column":"Bounce_Rate"},
+    {"metric":"ga:transactions","column":"Transactions"},
+    {"metric":"ga:transactionRevenue","column":"Transaction_Revenue"},
+    {"metric":"ga:transactionsPerSession","column":"Transactions_Per_Session"},
+]
+```
+
 **Acquisition**
 ```json
 "view_id":"34534524",
