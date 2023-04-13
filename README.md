@@ -75,6 +75,33 @@ Copier le script et le requirement dans une cloud function ayant **512MB de mém
 ]
 ```
 
+**⚠ Ancien rapport event**
+```json
+"view_id":"34534524",
+"projectId":"optimize-matter-fr-ga4",
+"datasetId":"GA3_Backup",
+"tableId":"Event",
+"accountId":"23802945",
+"webPropertyID":"UA-84135835-1",
+"dimensions":[
+    {"dimension":"ga:date","column":"Date"},
+    {"dimension":"ga:eventCategory","column":"Event_Category"},
+    {"dimension":"ga:eventLabel","column":"Event_Label"},
+    {"dimension":"ga:eventAction","column":"Event_Action"},
+    {"dimension":"ga:sourceMedium","column":"Source_Medium"},
+    {"dimension":"ga:campaign","column":"Campaign"},
+    {"dimension":"ga:pagePath","column":"Page_Path"}
+],
+"metrics":[
+    {"metric":"ga:totalEvents","column":"Total_Events"},
+    {"metric":"ga:uniquesEvents","column":"Uniques_Events"},
+    {"metric":"ga:avgEventValue","column":"Avg_Event_Value"},
+    {"metric":"ga:eventValue","column":"Event_Value"},
+    {"metric":"ga:sessionsWithEvent","column":"Sessions_With_Event"},
+    {"metric":"ga:eventsPerSessionWithEvent","column":"Events_Per_Session_With_Event"}
+]
+```
+
 **Acquisition**
 ```json
 "view_id":"34534524",
