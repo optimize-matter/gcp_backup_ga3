@@ -244,7 +244,7 @@ def verifOptionRequest(req):
     if 'clusteringFields' in req:
         clusteringFields = req['clusteringFields']
     else:
-        clusteringFields = ['view_id','country']
+        clusteringFields = ['view_id','webPropertyID']
 
     if 'pageToken' in req:
         pageToken = req['pageToken']
