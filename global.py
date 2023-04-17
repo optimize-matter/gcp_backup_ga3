@@ -158,29 +158,27 @@ def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metrics
     print('body temporaire : ', body)
     error = True
     while error:
-        response = analytics.reports().batchGet(body=body).execute()
         try :
-            if response['error']['code'] != 503:
-                print("erreur, retray dans 30 sec")
+            response = analytics.reports().batchGet(body=body).execute()
+            if 'error' in response:
+                print("erreur, re tray dans 30 sec")
                 time.sleep(30)
-        except:
-            for report in response.get('reports', []):
-                if report.get('data', {}).get('samplesReadCounts'):
-                    return True
-                else:
-                    for row in response['reports'][0]['data']['rows']:
-                        if '(other)' in row['dimensions'][0]:
-                            return True
-                        else:
+            else :
+                for report in response.get('reports', []):
+                    if report.get('data', {}).get('samplesReadCounts'):
+                        return True
+                    else:
+                        if 'rowCount' in response['reports'][0]['data']:
+                            for row in response['reports'][0]['data']['rows']:
+                                if '(other)' in row['dimensions'][0]:
+                                    return True
+                                else:
+                                    return False
+                        else: 
                             return False
-
-def get_dates_between(start_date, end_date):
-    dates = []
-    delta = timedelta(days=1)
-    while start_date <= end_date:
-        dates.append(start_date)
-        start_date += delta
-    return dates
+        except TimeoutError:
+            print("erreur, re tray dans 30 sec")
+            time.sleep(30)
 
 def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name):
     print("Traitement des données en cours...")
