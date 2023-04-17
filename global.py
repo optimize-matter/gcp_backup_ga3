@@ -156,16 +156,23 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
 def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel):
     body = constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,1,pagetoken=None)
     print('body temporaire : ', body)
-    response = analytics.reports().batchGet(body=body).execute()
-    for report in response.get('reports', []):
-        if report.get('data', {}).get('samplesReadCounts'):
-            return True
-        else:
-            for row in response['reports'][0]['data']['rows']:
-                if '(other)' in row['dimensions'][0]:
+    error = True
+    while error:
+        response = analytics.reports().batchGet(body=body).execute()
+        try :
+            if response['error']['code'] != 503:
+                print("erreur, retray dans 30 sec")
+                time.sleep(30)
+        except:
+            for report in response.get('reports', []):
+                if report.get('data', {}).get('samplesReadCounts'):
                     return True
                 else:
-                    return False
+                    for row in response['reports'][0]['data']['rows']:
+                        if '(other)' in row['dimensions'][0]:
+                            return True
+                        else:
+                            return False
 
 def get_dates_between(start_date, end_date):
     dates = []
