@@ -3,10 +3,13 @@ from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 from datetime import datetime
+from datetime import timedelta
 import pandas as pd
 import time
 
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
+
+Date_to_delete = []
 
 """Initialisation de l'API Managemet analytics"""
 def initialize_analyticsManagement(credentials):
@@ -138,12 +141,13 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
     metId=[{"expression":metric['metric']} for metric in metricsLabel]
     body= {'reportRequests': 
                 [
-                    {'viewId': VIEW_ID,
-                    'dateRanges': [{'startDate': startDate, 'endDate': endDate}],
-                    'dimensions':dimId,
-                    'metrics':metId,
-                    'pageSize':f"{pageSize}",
-                    'pageToken':pagetoken
+                    {
+                        'viewId': VIEW_ID,
+                        'dateRanges': [{'startDate': startDate, 'endDate': endDate}],
+                        'dimensions':dimId,
+                        'metrics':metId,
+                        'pageSize':100000,
+                        'pageToken':pagetoken,
                     },
                 ],
         }
@@ -157,7 +161,19 @@ def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metrics
         if report.get('data', {}).get('samplesReadCounts'):
             return True
         else:
-            return False
+            for row in response['reports'][0]['data']['rows']:
+                if '(other)' in row['dimensions'][0]:
+                    return True
+                else:
+                    return False
+
+def get_dates_between(start_date, end_date):
+    dates = []
+    delta = timedelta(days=1)
+    while start_date <= end_date:
+        dates.append(start_date)
+        start_date += delta
+    return dates
 
 def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name):
     print("Traitement des données en cours...")
@@ -167,6 +183,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
 
     dimensionsCol = [dimensionLabel[i]['column'] for i in range(len(dimensionLabel))]
     metricsCol = [metricsLabel[i]['column'] for i in range(len(metricsLabel))]
+    date_with_other = []
 
     #Récupération des metrics
     metricsName = []
@@ -174,7 +191,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
         metricsName.append(metricsHeader['name'])
 
     # Transformation des données en list de dico, peux importe l'ordre des dimensions quand on les à défini
-    for r in rsp['reports'][0]['data']['rows']:
+    for index,r in enumerate(rsp['reports'][0]['data']['rows']):
         row = {}
         dimensionsValue = r['dimensions']
         metricsValue = r['metrics'][0]['values']
@@ -340,6 +357,7 @@ def main(req):
                     report_end_date = None
                     print("Pas de data")
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
+    print("Les dates suivantes non pas été prise en entier, il faut les retraiter par heure",Date_to_delete)
     end_time = time.monotonic()
     print(f"fini en {(end_time - start_time)/60} minutes")
     return 'ok'
