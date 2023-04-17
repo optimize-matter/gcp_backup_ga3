@@ -342,7 +342,17 @@ def main(req):
                 print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
             else:#Le rslt n'est pas échantillonné 
                 body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],100000,pageToken) # Construction du body avec les paramétres de la requéte
-                response = analytics.reports().batchGet(body=body).execute()# Execution de la requéte
+                error = True
+                while error:
+                    try :
+                        response = analytics.reports().batchGet(body=body).execute()
+                        if 'error' in response:
+                            print("erreur, re tray dans 30 sec")
+                            time.sleep(30)
+                        error = False
+                    except TimeoutError:
+                        print("erreur, re tray dans 30 sec")
+                        time.sleep(30)
                 # print(list(response['reports'][0]['data']))
                 if 'rowCount' in response['reports'][0]['data']:
                     rowsCount+= response['reports'][0]['data']['rowCount']
