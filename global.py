@@ -349,10 +349,10 @@ def main(req):
                 rowsCount+= response['reports'][0]['data']['rowCount']
                 print("Résultat non échantillonné")
                 data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
-                print(data)
-                # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
+                # print(data)
+                addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
                 pageToken = verifPageToken(response)#On regarde si il y a un pageToken
-                print("Prochaine page :",pageToken)
+                print("Prochaine page :",pageToken,"pour le compte :", req['webPropertyID'],"un export d'",req['tableId'])
                 if pageToken == None:#Si il n'y en a pas 
                     startDate = reportEndDate #On passe à la prochaine date 
                     if reportEndDate == prev_end_date:
