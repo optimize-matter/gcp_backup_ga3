@@ -121,11 +121,7 @@ def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringField
     except NotFound:
         table_ref = "{}.{}.{}".format(project_id, dataset_id, table_id)
         table = bigquery.Table(table_ref, schema=schema)
-        if 'date' in dimensions:
-            table.time_partitioning = bigquery.TimePartitioning(
-                type_=bigquery.TimePartitioningType.DAY,
-                field="date"
-            )
+        table.time_partitioning = bigquery.TimePartitioning(bigquery.TimePartitioningType.DAY,field="date")
         if clusteringFields is not None:
             table.clustering_fields = clusteringFields
 
