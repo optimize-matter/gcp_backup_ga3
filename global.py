@@ -9,8 +9,6 @@ import time
 
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
-Date_to_delete = []
-
 """Initialisation de l'API Managemet analytics"""
 def initialize_analyticsManagement(credentials):
   # Build the service object.
@@ -310,7 +308,7 @@ def main(req):
     if verifRequireRequest(req) != 'ok':
         return 'Erreur de paramétres'
     clusteringFields,pageToken,startDate,endDate = verifOptionRequest(req)#Vérification et définition des paramétre optionnel
-    print(pageToken)
+    # print(pageToken)
     """Initialisation des API"""
     management = initialize_analyticsManagement(CREDENTIALS)# Initialisation de l'API Management
     metadata = initialize_analyticsMetadata(CREDENTIALS)# Initialisation de l'API MetaData
@@ -326,7 +324,8 @@ def main(req):
     allFormatedDimsAndMets += formatCustomDimMet(req['dimensions'],req['metrics'],management,req['accountId'],req['webPropertyID'])
     schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
     db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
-    db = 'ok'
+    """Nettoyage des variables inutiles"""
+    del allFormatedDimsAndMets,schema,management,metadata,clusteringFields
     nombreRequête = 0 #Pour compter le nombre de requêtes  
     rowsCount = 0 #Pour connaître le nbr de ligne
     reportEndDate = None
@@ -360,7 +359,6 @@ def main(req):
                     else:
                         reportEndDate = prev_end_date
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
-    print("Les dates suivantes non pas été prise en entier, il faut les retraiter par heure",Date_to_delete)
     end_time = time.monotonic()
     print(f"fini en {(end_time - start_time)/60} minutes")
     return 'ok'
