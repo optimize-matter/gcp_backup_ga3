@@ -146,15 +146,16 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
                         'dateRanges': [{'startDate': startDate, 'endDate': endDate}],
                         'dimensions':dimId,
                         'metrics':metId,
-                        'pageSize':100000,
+                        'pageSize':f"{pageSize}",
                         'pageToken':pagetoken,
                     },
                 ],
         }
     return body
 
-def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel):
-    body = constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,1,pagetoken=None)
+def verifData(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pagetoken):
+    '''Vérifie si les donées sont échatillonné et si il y a des données dans la range de date'''
+    body = constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,100000,pagetoken)
     print('body temporaire : ', body)
     error = True
     while error:
@@ -166,16 +167,18 @@ def verifEchantillion(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metrics
             else :
                 for report in response.get('reports', []):
                     if report.get('data', {}).get('samplesReadCounts'):
-                        return True
+                        return True,None
                     else:
                         if 'rowCount' in response['reports'][0]['data']:
                             for row in response['reports'][0]['data']['rows']:
                                 if '(other)' in row['dimensions'][0]:
-                                    return True
+                                    print("Data cardinalisé")
+                                    return True,None
                                 else:
-                                    return False
-                        else: 
-                            return False
+                                    return False,response
+                        else:
+                            print("Pas de data")
+                            return 'no data',None
         except TimeoutError:
             print("erreur, re tray dans 30 sec")
             time.sleep(30)
@@ -307,7 +310,7 @@ def main(req):
     if verifRequireRequest(req) != 'ok':
         return 'Erreur de paramétres'
     clusteringFields,pageToken,startDate,endDate = verifOptionRequest(req)#Vérification et définition des paramétre optionnel
-
+    print(pageToken)
     """Initialisation des API"""
     management = initialize_analyticsManagement(CREDENTIALS)# Initialisation de l'API Management
     metadata = initialize_analyticsMetadata(CREDENTIALS)# Initialisation de l'API MetaData
@@ -326,51 +329,36 @@ def main(req):
     db = 'ok'
     nombreRequête = 0 #Pour compter le nombre de requêtes  
     rowsCount = 0 #Pour connaître le nbr de ligne
-    report_end_date = None
+    reportEndDate = None
     if db =='ok':
         while startDate != endDate:#Enfin de boucle on assigne la date de fin du body à startDate et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
             nombreRequête+=1
-            if report_end_date == None:
+            if reportEndDate == None:
                 reportEndDate = endDate
-            else:
-                reportEndDate = report_end_date
             print("Dates concernées :",startDate, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
-            if verifEchantillion(analytics,req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics']):# Si le rslt est échantilloner 
-                prev_end_date = report_end_date
-                report_end_date = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
-                report_end_date = report_end_date.strftime("%Y-%m-%d")
+            verif,response = verifData(analytics,req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken)
+            if verif == True:# Si le rslt est échantilloner 
+                prev_end_date = reportEndDate
+                reportEndDate = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
+                reportEndDate = reportEndDate.strftime("%Y-%m-%d")
                 print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
+            elif verif =='no data':
+                startDate = reportEndDate #On passe à la prochaine date 
+                reportEndDate = None
             else:#Le rslt n'est pas échantillonné 
-                body = constructBody(req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],100000,pageToken) # Construction du body avec les paramétres de la requéte
-                error = True
-                while error:
-                    try :
-                        response = analytics.reports().batchGet(body=body).execute()
-                        if 'error' in response:
-                            print("erreur, re tray dans 30 sec")
-                            time.sleep(30)
-                        error = False
-                    except TimeoutError:
-                        print("erreur, re tray dans 30 sec")
-                        time.sleep(30)
-                # print(list(response['reports'][0]['data']))
-                if 'rowCount' in response['reports'][0]['data']:
-                    rowsCount+= response['reports'][0]['data']['rowCount']
-                    print("Résultat non échantillonné")
-                    data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
-                    addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
-                    pageToken = verifPageToken(response)#On regarde si il y a un pageToken
-                    print("Prochaine page :",pageToken)
-                    if pageToken == None:#Si il n'y en a pas 
-                        startDate = reportEndDate #On passe à la prochaine date 
-                        if report_end_date == prev_end_date:
-                            report_end_date = None
-                        else:
-                            report_end_date = prev_end_date
-                else:
+                rowsCount+= response['reports'][0]['data']['rowCount']
+                print("Résultat non échantillonné")
+                data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
+                print(data)
+                # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
+                pageToken = verifPageToken(response)#On regarde si il y a un pageToken
+                print("Prochaine page :",pageToken)
+                if pageToken == None:#Si il n'y en a pas 
                     startDate = reportEndDate #On passe à la prochaine date 
-                    report_end_date = None
-                    print("Pas de data")
+                    if reportEndDate == prev_end_date:
+                        reportEndDate = None
+                    else:
+                        reportEndDate = prev_end_date
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
     print("Les dates suivantes non pas été prise en entier, il faut les retraiter par heure",Date_to_delete)
     end_time = time.monotonic()
