@@ -179,7 +179,7 @@ def verifData(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pa
                         else:
                             print("Pas de data")
                             return 'no data',None
-        except TimeoutError:
+        except :
             print("erreur, re tray dans 30 sec")
             time.sleep(30)
 
