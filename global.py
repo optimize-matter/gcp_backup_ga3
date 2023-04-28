@@ -250,7 +250,6 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
         elif met['type'] == "PERCENT":
             rows = rows.astype({met['name']:float})
         elif met['type'] == "TIME":
-            print(rows[met['name']])
             #Transforme au format : HH:MM:SS
             rows[met['name']] = rows[met['name']].apply(lambda x: float_to_time(float(x)))
 
@@ -390,9 +389,6 @@ def main(req):
                         reportEndDate = None
                     else:
                         reportEndDate = prev_end_date
-                    end_time = time.monotonic()
-                    if (end_time - start_time)/60 > 50:
-                        return "Time out pour bientôt, le scheduler va reprendre ou on c'est stoper"
     if 'row_count' in req:
         rowsCount+= req['row_count']
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
