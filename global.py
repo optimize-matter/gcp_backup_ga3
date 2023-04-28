@@ -2,10 +2,17 @@ from googleapiclient.discovery import build
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
-from datetime import datetime
-from datetime import timedelta
+from google.oauth2 import id_token
+from google.auth.transport.requests import Request
+from google.auth.transport.requests import AuthorizedSession
+from datetime import time
+import datetime
 import pandas as pd
 import time
+import math
+import os
+import requests
+import json
 
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
@@ -108,7 +115,7 @@ def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringField
     try:
         dataset_ref = "{}.{}".format(project_id, dataset_id)
         client.get_dataset(dataset_ref)  # Make an API request.
-        print("data set id présent")
+        print("dataset présent")
     except NotFound:
         dataset_ref = "{}.{}".format(project_id, dataset_id)
         dataset = bigquery.Dataset(dataset_ref)
@@ -116,6 +123,7 @@ def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringField
         dataset = client.create_dataset(dataset)  # Make an API request.
 
     try:
+        print("Table présent")
         table_ref = "{}.{}.{}".format(project_id, dataset_id, table_id)
         client.get_table(table_ref)  # Make an API request.
     except NotFound:
@@ -152,12 +160,15 @@ def verifData(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pa
     body = constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,100000,pagetoken)
     print('body temporaire : ', body)
     error = True
+    errorsCount = 5 
     while error:
         try :
             response = analytics.reports().batchGet(body=body).execute()
             if 'error' in response:
+                print(response)
                 print("erreur, re tray dans 30 sec")
                 time.sleep(30)
+                errorsCount-=1
             else :
                 for report in response.get('reports', []):
                     if report.get('data', {}).get('samplesReadCounts'):
@@ -174,8 +185,25 @@ def verifData(analytics,VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pa
                             print("Pas de data")
                             return 'no data',None
         except :
+            errorsCount-=1
             print("erreur, re tray dans 30 sec")
             time.sleep(30)
+
+        if errorsCount <= 0:
+            return "trop d'erreur"
+
+def float_to_time(seconds):
+    # Diviser les secondes en heures, minutes et secondes individuellement
+    hours = math.floor(seconds / 3600)
+    seconds %= 3600
+    minutes = math.floor(seconds / 60)
+    seconds %= 60
+    seconds = math.floor(seconds)
+
+    return datetime.time(hours,minutes,seconds)
+
+    # # Retourner le résultat sous forme d'une chaîne de caractères
+    # return f"{hours}:{minutes}:{seconds}"
 
 def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name):
     print("Traitement des données en cours...")
@@ -199,7 +227,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
         metricsValue = r['metrics'][0]['values']
         for i in range(len(dimensionsValue)):
             if dimensionsName[i] == 'ga:date':
-                date = datetime.strptime(dimensionsValue[i],"%Y%m%d").date()
+                date = datetime.datetime.strptime(dimensionsValue[i],"%Y%m%d").date()
                 row.update({dimensionsName[i]:date})
             else:
                 row.update({dimensionsName[i]:dimensionsValue[i]})
@@ -222,7 +250,9 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
         elif met['type'] == "PERCENT":
             rows = rows.astype({met['name']:float})
         elif met['type'] == "TIME":
-            rows = rows.astype({met['name']:datetime.time()})
+            print(rows[met['name']])
+            #Transforme au format : HH:MM:SS
+            rows[met['name']] = rows[met['name']].apply(lambda x: float_to_time(float(x)))
 
     # Renomage des colonnes (pour retirer le ":ga")
     rows.columns = dimensionsCol+metricsCol
@@ -278,7 +308,7 @@ def verifOptionRequest(req):
     if 'endDate' in req:
         endDate = req['endDate']
     else:
-        endDate = datetime.now().date().strftime("%Y-%m-%d")
+        endDate = datetime.datetime.now().date().strftime("%Y-%m-%d")
     return clusteringFields,pageToken,startDate,endDate
 
 def verifRequireRequest(req):
@@ -296,8 +326,12 @@ def getWebPropertyName(management,web_property_id):
                 return web_propertys['name']
     return 'erreur'
 
-
 def main(req):
+
+    
+    # for key, value in os.environ.items():
+    #     print(f"{key}: {value}")
+
     start_time = time.monotonic()
     req = req.get_json()# Récupération des paramétres du body
     """Vérification des différent paramétre du body"""
@@ -334,9 +368,11 @@ def main(req):
             verif,response = verifData(analytics,req['viewId'],startDate,reportEndDate,req['dimensions'],req['metrics'],pageToken)
             if verif == True:# Si le rslt est échantilloner 
                 prev_end_date = reportEndDate
-                reportEndDate = datetime.strptime(startDate,"%Y-%m-%d")+(datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
+                reportEndDate = datetime.datetime.strptime(startDate,"%Y-%m-%d")+(datetime.datetime.strptime(reportEndDate,"%Y-%m-%d")-datetime.datetime.strptime(startDate,"%Y-%m-%d"))/2 # Nouvelle date = nombre de jour entre les dates diviser par 2
                 reportEndDate = reportEndDate.strftime("%Y-%m-%d")
                 print("Résultat échantillioné, nouvelle date :")#on retourne au début du while
+            elif verif =="trop d'erreur":
+                return verif
             elif verif =='no data':
                 startDate = reportEndDate #On passe à la prochaine date 
                 reportEndDate = None
@@ -346,7 +382,7 @@ def main(req):
                 # print(data)
                 addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
                 pageToken = verifPageToken(response)#On regarde si il y a un pageToken
-                print("Prochaine page :",pageToken,"pour le compte :", req['webPropertyID'],"un export d'",req['tableId'])
+                print("Prochaine page :",pageToken,"pour le compte :", req['webPropertyID'],"sur la vue",req['viewId'],"un export d'",req['tableId'])
                 if pageToken == None:#Si il n'y en a pas 
                     rowsCount+= response['reports'][0]['data']['rowCount']
                     startDate = reportEndDate #On passe à la prochaine date 
@@ -354,7 +390,14 @@ def main(req):
                         reportEndDate = None
                     else:
                         reportEndDate = prev_end_date
+                    end_time = time.monotonic()
+                    if (end_time - start_time)/60 > 50:
+                        return "Time out pour bientôt, le scheduler va reprendre ou on c'est stoper"
+    if 'row_count' in req:
+        rowsCount+= req['row_count']
     print("L'opération est un succés, en",nombreRequête,"requête(s), félicitation !",rowsCount,"Lignes ont été ajouté ! Les données sont en sécurité, retour à la base soldat")
     end_time = time.monotonic()
+    if 'end_time' in req:
+        end_time += req['end_time']
     print(f"fini en {(end_time - start_time)/60} minutes")
     return 'ok'
