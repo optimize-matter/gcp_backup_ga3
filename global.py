@@ -141,17 +141,58 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
     
     dimId=[{"name":dimension['dimension']} for dimension in dimensionLabel]
     metId=[{"expression":metric['metric']} for metric in metricsLabel]
-    body= {'reportRequests': 
+    dimIdWeek = []
+    dimIdMonth = []
+    dimIdYear = []
+    for dim in dimId:
+        if dim['name'] == "ga:date":
+            dimIdWeek.append({"name":"ga:isoWeek"})
+            dimIdMonth.append({"name":"ga:yearMonth"})
+            dimIdYear.append({"name":"ga:isoYear"})
+        else:
+            dimIdWeek.append(dim)
+            dimIdMonth.append(dim)
+            dimIdYear.append(dim)
+
+    body= {"reportRequests": 
                 [
+                    #Rapport par jour
                     {
-                        'viewId': VIEW_ID,
-                        'dateRanges': [{'startDate': startDate, 'endDate': endDate}],
-                        'dimensions':dimId,
-                        'metrics':metId,
-                        'pageSize':f"{pageSize}",
-                        'pageToken':pagetoken,
+                        "viewId": VIEW_ID,
+                        "dateRanges": [{"startDate": startDate, "endDate": endDate}],
+                        "dimensions":dimId,
+                        "metrics":metId,
+                        "pageSize":f"{pageSize}",
+                        "pageToken":pagetoken
                     },
-                ],
+                    #Rapport par semaine
+                    {
+                        "viewId": VIEW_ID,
+                        "dateRanges": [{"startDate": startDate, "endDate": endDate}],
+                        "dimensions":dimIdWeek,
+                        "metrics":metId,
+                        "pageSize":f"{pageSize}",
+                        "pageToken":pagetoken
+                    },
+                    #Rapport par month
+                    {
+                        "viewId": VIEW_ID,
+                        "dateRanges": [{"startDate": startDate, "endDate": endDate}],
+                        "dimensions":dimIdMonth,
+                        "metrics":metId,
+                        "pageSize":f"{pageSize}",
+                        "pageToken":pagetoken
+                    },
+                    #Rapport par year
+                    {
+                        "viewId": VIEW_ID,
+                        "dateRanges": [{"startDate": startDate, "endDate": endDate}],
+                        "dimensions":dimIdYear,
+                        "metrics":metId,
+                        "pageSize":f"{pageSize}",
+                        "pageToken":pagetoken
+                    }
+                ]
         }
     return body
 
@@ -379,7 +420,7 @@ def main(req):
                 print("Résultat non échantillonné")
                 data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name)# Traitement des données (mise en dataFrame & changement des type de données)
                 # print(data)
-                addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
+                # addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
                 pageToken = verifPageToken(response)#On regarde si il y a un pageToken
                 print("Prochaine page :",pageToken,"pour le compte :", req['webPropertyID'],"sur la vue",req['viewId'],"un export d'",req['tableId'])
                 if pageToken == None:#Si il n'y en a pas 
