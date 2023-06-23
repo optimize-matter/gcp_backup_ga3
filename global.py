@@ -10,7 +10,6 @@ import time
 import math
 import re
 
-CREDENTIALSV = service_account.Credentials.from_service_account_file('key_verisure.json')
 CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
 """Initialisation de l'API Managemet analytics"""
@@ -393,9 +392,9 @@ def main(req):
         return 'Erreur de paramétres'
     clusteringFields,pageToken,startDate,endDate = verifOptionRequest(req)#Vérification et définition des paramétre optionnel
     """Initialisation des API"""
-    management = initialize_analyticsManagement(CREDENTIALSV)# Initialisation de l'API Management
-    metadata = initialize_analyticsMetadata(CREDENTIALSV)# Initialisation de l'API MetaData
-    analytics = initialize_analyticsreporting(CREDENTIALSV)# Initialisation de l'API GA
+    management = initialize_analyticsManagement(CREDENTIALS)# Initialisation de l'API Management
+    metadata = initialize_analyticsMetadata(CREDENTIALS)# Initialisation de l'API MetaData
+    analytics = initialize_analyticsreporting(CREDENTIALS)# Initialisation de l'API GA
     bq = initialize_bigquery(CREDENTIALS, req['projectId'])# Initialisation de BQ
     
     Web_Property_Name = getWebPropertyName(management,req['webPropertyID'])
