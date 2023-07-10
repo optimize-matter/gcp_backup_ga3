@@ -10,7 +10,7 @@ import time
 import math
 import re
 
-CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
+CREDENTIALS = service_account.Credentials.from_service_account_file('key_mf.json')
 
 """Initialisation de l'API Managemet analytics"""
 def initialize_analyticsManagement(credentials):
@@ -534,7 +534,7 @@ def main(req):
                             else:
                                 startDateReq = datetime.datetime(startDateReq.year,startDateReq.month+1,1)
                         else:
-                            deltaMonths = relativedelta(reportEndDate.date(),startDateReq.date()).months # Nombre de mois entre les 2 dates
+                            deltaMonths = relativedelta(reportEndDate.date(),startDateReq.date()).years*12 + relativedelta(reportEndDate.date(),startDateReq.date()).months # Nombre de mois entre les 2 dates
                             delatNewDate = deltaMonths//2 # Nombre de mois divisé par 2 "//" assure qu'on récupére un entier
                             reportEndDate = startDateReq + relativedelta(months=delatNewDate)
                     elif next(iter(aggregation_level)) == 'Year':
