@@ -496,7 +496,7 @@ def main(req):
 
             endDateReq = reportEndDate # reportEndDate est la date qui va être découpé
             previousPageToken = None
-            while startDateReq.date() <= endDateReq.date():#Enfin de boucle on assigne la date de fin du body à startDateReq et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
+            while startDateReq.date() < endDateReq.date():#Enfin de boucle on assigne la date de fin du body à startDateReq et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
                 nombreRequête+=1
                 print(f'Backup en cours pour une aggregation par {next(iter(aggregation_level))}')
                 print("Dates concernées :",startDateReq, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
@@ -562,10 +562,6 @@ def main(req):
                     if next(iter(aggregation_level)) == 'Day':
                         # Pour pas de duplication sinon les données du 13/03/2023 seront en double car une fois en start_date et l'autre en end_date
                         startDateReq+= datetime.timedelta(days=1)
-                        reportEndDate+= datetime.timedelta(days=1)
-                        #Si reportEndDate est plus grand que endDate alors c'est la derniére requête
-                        if reportEndDate >= endDateReq:
-                            reportEndDate = endDateReq
                         #Si reportEndDate est plus grand que la date de début, c'est que les données son à jour
                         if startDateReq > reportEndDate:
                             startDateReq = endDateReq
@@ -617,8 +613,8 @@ def main(req):
                             if startDateReq > reportEndDate:
                                 startDateReq = endDateReq
                             #On prend plus de jour si le pageToken est inférieur à 800000
-                            if previousPageToken != None or nombreRequêteExporter>1:
-                                if previousPageToken == None:
+                            if (previousPageToken != None or nombreRequêteExporter>1) and (reportEndDate < endDateReq):
+                                if previousPageToken == None and reportEndDate < endDateReq:
                                     reportEndDate+= datetime.timedelta(days=1)
                                 elif int(previousPageToken) < 800000:
                                     reportEndDate+= datetime.timedelta(days=2)
@@ -636,9 +632,9 @@ def main(req):
                                 reportEndDate = endDateReq
                                 reportEndDate-= datetime.timedelta(days=7)
                                 reportEndDate = (reportEndDate - datetime.timedelta(days=reportEndDate.weekday()))
-                            if previousPageToken != None or nombreRequêteExporter>1:
+                            if previousPageToken != None or nombreRequêteExporter>1 and reportEndDate != endDateReq:
                                 print(previousPageToken)
-                                if previousPageToken == None:
+                                if previousPageToken == None and reportEndDate < endDateReq:
                                     reportEndDate+= datetime.timedelta(days=7*1)
                                 elif int(previousPageToken) < 800000:
                                     reportEndDate+= datetime.timedelta(days=7*2)
@@ -661,7 +657,7 @@ def main(req):
 
                             if reportEndDate > endDateReq:
                                 reportEndDate = endDateReq
-                            if previousPageToken != None or nombreRequêteExporter>1:
+                            if previousPageToken != None or nombreRequêteExporter>1 and reportEndDate != endDateReq:
                                 print(previousPageToken)
                                 if previousPageToken == None:
                                     if reportEndDate.month + 1 > 12:
