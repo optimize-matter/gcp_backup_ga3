@@ -665,10 +665,10 @@ def main(req):
                                     else:
                                         reportEndDate = datetime.datetime(reportEndDate.year,reportEndDate.month + 1,1)
                                 elif int(previousPageToken) < 200000:
-                                    if reportEndDate.month + 1 > 12:
+                                    if reportEndDate.month + 3 > 12:
                                         reportEndDate = datetime.datetime(reportEndDate.year + 1,3,1)
                                     else:
-                                        reportEndDate= datetime.datetime(reportEndDate.year,reportEndDate.month + 3,1)
+                                        reportEndDate = datetime.datetime(reportEndDate.year,reportEndDate.month + 3,1)
                                     previousPageToken = pageToken
                                 else:
                                     previousPageToken = pageToken
