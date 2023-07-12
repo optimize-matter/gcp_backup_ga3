@@ -668,7 +668,7 @@ def main(req):
                                     if reportEndDate.month + 1 > 12:
                                         reportEndDate = datetime.datetime(reportEndDate.year + 1,3,1)
                                     else:
-                                        reportEndDate= datetime.timedelta(reportEndDate.year,reportEndDate.month + 3,1)
+                                        reportEndDate= datetime.datetime(reportEndDate.year,reportEndDate.month + 3,1)
                                     previousPageToken = pageToken
                                 else:
                                     previousPageToken = pageToken
