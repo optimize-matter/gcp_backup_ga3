@@ -367,14 +367,28 @@ def verifRequireRequest(req):
     else:
         return 'ko'
     
-def getWebPropertyName(management,web_property_id):
-    rsp = management.management().accountSummaries().list().execute()
-    for item in rsp['items']:
-        for web_propertys in item['webProperties']:
-            if web_propertys['id'] == web_property_id:
-                print(web_propertys)
-                return web_propertys['name']
-    return 'erreur'
+def check_ga4_permission(management,account_id,web_property_id,view_id):
+    accounts = management.management().accounts().list().execute()
+    for item in accounts['items']:
+        if item['id'] == account_id:
+            propertys = management.management().webproperties().list(accountId=item['id']).execute()
+            for property in propertys['items']:
+                if property['id'] == web_property_id:
+                    views = management.management().profiles().list(accountId=item['id'],webPropertyId=property['id']).execute()
+                    for view in views['items']:
+                        if view['id'] == view_id:
+                            return True
+    return False
+    # rsp = management.management().profiles().get(
+    #   accountId=account_id,
+    #   webPropertyId=web_property_id,
+    #   profileId=view_id).execute()
+    # for item in rsp['items']:
+    #     for web_propertys in item['webProperties']:
+    #         if web_propertys['id'] == web_property_id:
+    #             print(web_propertys)
+    #             return web_propertys['name']
+    # return 'erreur'
 
 def check_table_date(bq,projet_name,dataset_name,table_name,aggregation_level,view_id):
     query = f"SELECT max(date) FROM `{projet_name}.{dataset_name}.{table_name}` WHERE Aggregation = '{next(iter(aggregation_level))}' AND View_id = '{view_id}'"
@@ -411,9 +425,9 @@ def main(req):
     analytics = initialize_analyticsreporting(CREDENTIALS)# Initialisation de l'API GA
     bq = initialize_bigquery(CREDENTIALS, req['projectId'])# Initialisation de BQ
     
-    Web_Property_Name = getWebPropertyName(management,req['webPropertyID'])
-    if Web_Property_Name == 'erreur':
-        return f"ko le crédential n'a pas accés au compte : {req['webPropertyID']}"
+    Web_Property_Name = check_ga4_permission(management,req['accountId'],req['webPropertyID'],req['viewId'])
+    if Web_Property_Name == False:
+        return f"ko le crédential n'a pas à la vue : {req['viewId']}"
 
     """Mise en forme des dimensions et metrics"""
     allFormatedDimsAndMets = formatDimMet(req['dimensions'],req['metrics'],metadata)
@@ -430,7 +444,7 @@ def main(req):
         {"Day":"ga:date"},
         {"Week":"ga:isoYearIsoWeek"},
         {"Month":"ga:yearMonth"},
-        {"Year":"ga:isoYear"}
+        # {"Year":"ga:isoYear"}
     ]
     timeByAggregation = []
     if db =='ok':
