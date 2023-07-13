@@ -100,9 +100,9 @@ def createSchema(dimensions,metrics,dims):
             schema.append(bigquery.SchemaField(dim['column'],"FLOAT",mode="NULLABLE"))
         else:
             schema.append(bigquery.SchemaField(dim['column'],"STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("View_id","STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("Web_Property_Name","STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("Aggregation","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("view_id","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("web_property_name","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("aggregation","STRING",mode="NULLABLE"))
     return schema
 
 def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringFields,dimensions,schema):
