@@ -142,6 +142,20 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
         if dim['name'] == "ga:date":
             for key,value in aggregation_level.items():
                 dimId[index] = {"name":value}
+                if key == "Week":
+                    endDate+= datetime.timedelta(days=6)#On ajoute 6 jour pour prendre toute la semaine
+                    if endDate > datetime.datetime.now():
+                        endDate-= datetime.timedelta(days=7)
+                elif key == "Month":
+                    if endDate.month+1 > 12:
+                        endDate = datetime.datetime(endDate.year+1,1,endDate.day) - datetime.timedelta(days=1)
+                    else:
+                        endDate = datetime.datetime(endDate.year,endDate.month+1,endDate.day) - datetime.timedelta(days=1)
+                    if endDate > datetime.datetime.now():
+                        endDate-= datetime.timedelta(month=1)
+                elif key == "Year":
+                    endDate = datetime.datetime(endDate.year+1,endDate.month,endDate.day) - datetime.timedelta(days=1)
+
 
     body = {"reportRequests": 
                 [
