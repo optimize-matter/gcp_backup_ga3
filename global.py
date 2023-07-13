@@ -729,4 +729,6 @@ def main(req):
         end_time += req['end_time']
     print(f"fini en {(end_time - start_time)/60} minutes")
     print(timeByAggregation)
+    if stop:
+        return "Timeout relancer"
     return 'ok'
