@@ -152,7 +152,7 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
                     else:
                         endDate = datetime.datetime(endDate.year,endDate.month+1,endDate.day) - datetime.timedelta(days=1)
                     if endDate > datetime.datetime.now():
-                        endDate-= datetime.timedelta(month=1)
+                        endDate = datetime.datetime(endDate.year,endDate.month-1,endDate.day)
                 elif key == "Year":
                     endDate = datetime.datetime(endDate.year+1,endDate.month,endDate.day) - datetime.timedelta(days=1)
 
