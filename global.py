@@ -30,21 +30,21 @@ def initialize_bigquery(credentials,project_id):
 
 def formatDimMet(dimensions,metrics,service):
     columns = service.metadata().columns().list(reportType='ga').execute()
-
      # Récupération des id de tout les metrics et dims
     dimensionsId=[dimension['dimension'] for dimension in dimensions]
     metricsId=[metric['metric'] for metric in metrics]
 
-    # Si le tableau les metrics et dimensions existe dans ga on les récupére
-    def checkDimMet(item):
-        if item['id'] in dimensionsId or item['id'] in metricsId:
-            return True
-        return False
-
-    dims = filter(checkDimMet,columns['items'])
-    dims = list(dims)
-    dims = [{'id':dims[i]['id'],'type':dims[i]['attributes']['dataType']} for i in range(len(dims))]#On fais un dico avec l'id et le type du met ou dims
-    return dims
+    dims=[]
+    for dimensionId in dimensionsId:
+        for col_item in columns['items']:
+            if dimensionId == col_item['id']:
+                dims.append({'id':col_item['id'],'type':col_item['attributes']['dataType']})
+    mets=[]
+    for metricId in metricsId:
+        for col_item in columns['items']:
+            if metricId == col_item['id']:
+                mets.append({'id':col_item['id'],'type':col_item['attributes']['dataType']})
+    return dims,mets
 
 def formatCustomDimMet(dimensions,metrics,service,accountId,webPropertyId):
     # Récupération des id de tout les metrics et dims du compte GA
@@ -83,6 +83,10 @@ def createSchema(dimensions,metrics,dims):
         for metric in metrics:
             if dim['id'] == metric['metric']:
                 dim['column'] = metric['column']
+    
+    schema.append(bigquery.SchemaField("view_id","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("web_property_name","STRING",mode="NULLABLE"))
+    schema.append(bigquery.SchemaField("aggregation","STRING",mode="NULLABLE"))
 
     # On crée les colonnes bigquery avec le bon nom et le bon Type !
     for dim in dims:
@@ -100,9 +104,6 @@ def createSchema(dimensions,metrics,dims):
             schema.append(bigquery.SchemaField(dim['column'],"FLOAT",mode="NULLABLE"))
         else:
             schema.append(bigquery.SchemaField(dim['column'],"STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("view_id","STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("web_property_name","STRING",mode="NULLABLE"))
-    schema.append(bigquery.SchemaField("aggregation","STRING",mode="NULLABLE"))
     return schema
 
 def exist_dataset_table(client, table_id, dataset_id, project_id,clusteringFields,dimensions,schema):
@@ -430,12 +431,15 @@ def main(req):
         return f"ko le crédential n'a pas à la vue : {req['viewId']}"
 
     """Mise en forme des dimensions et metrics"""
-    allFormatedDimsAndMets = formatDimMet(req['dimensions'],req['metrics'],metadata)
-    allFormatedDimsAndMets += formatCustomDimMet(req['dimensions'],req['metrics'],management,req['accountId'],req['webPropertyID'])
+    FormatedDims,FromatedMets = formatDimMet(req['dimensions'],req['metrics'],metadata)
+    FormatedCustomDims,FromatedCustomMets = formatCustomDimMet(req['dimensions'],req['metrics'],management,req['accountId'],req['webPropertyID'])
+    FormatedDims += FormatedCustomDims
+    FromatedMets += FromatedCustomMets
+    allFormatedDimsAndMets = FormatedDims+FromatedMets
     schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
     db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
     """Nettoyage des variables inutiles"""
-    del allFormatedDimsAndMets,schema,management,metadata,clusteringFields
+    del allFormatedDimsAndMets,schema,management,metadata,clusteringFields,FormatedDims,FromatedMets,FormatedCustomDims,FromatedCustomMets
     nombreRequête = 0 #Pour compter le nombre de requêtes  
     nombreRequêteExporter = 0 #Pour compter le nombre de requêtes  
     rowsCount = 0 #Pour connaître le nbr de ligne
