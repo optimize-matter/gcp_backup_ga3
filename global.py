@@ -10,7 +10,7 @@ import time
 import math
 import re
 
-CREDENTIALS = service_account.Credentials.from_service_account_file('key_mf.json')
+CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
 
 """Initialisation de l'API Managemet analytics"""
 def initialize_analyticsManagement(credentials):
@@ -71,7 +71,7 @@ def formatCustomDimMet(dimensions,metrics,service,accountId,webPropertyId):
 
     met = list(filter(checkMet,metricsCustom['items']))
     met = [{'id':met[i]['id'],'type':met[i]['type']} for i in range(len(met))]#On fais un dico avec l'id et le type du met ou dims
-    return dims+met
+    return dims,met
 
 def createSchema(dimensions,metrics,dims):
     schema = []
@@ -284,7 +284,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
                     row.update({dimensionsName[i]:dimensionsValue[i]})
             for i in range(len(metricsValue)):
                 row.update({metricsName[i]:metricsValue[i]})
-            row.update({"Aggregation":next(iter(aggregation_level))})
+            row.update({"aggregation":next(iter(aggregation_level))})
             rows.append(row)
     # Transformation de la list en dataFrame
     rows = pd.DataFrame(rows)
@@ -305,9 +305,9 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
             rows[met['name']] = rows[met['name']].apply(lambda x: float_to_time(float(x)))
 
     # Renomage des colonnes (pour retirer le ":ga")
-    rows.columns = dimensionsCol+metricsCol+["Aggregation"]#"isoYearIsoWeek","yearMonth","isoYear"
-    rows = rows.assign(View_id=[view_id]*len(rows))
-    rows = rows.assign(Web_Property_Name=[Web_Property_Name]*len(rows))
+    rows.columns = dimensionsCol+metricsCol+["aggregation"]#"isoYearIsoWeek","yearMonth","isoYear"
+    rows = rows.assign(view_id=[view_id]*len(rows))
+    rows = rows.assign(web_property_name=[Web_Property_Name]*len(rows))
     return rows
 
 def addToBQ(bq,PROJECT_ID,DATASET_ID,TABLE_ID,data,dimensionLabel):
@@ -378,18 +378,8 @@ def check_ga4_permission(management,account_id,web_property_id,view_id):
                     views = management.management().profiles().list(accountId=item['id'],webPropertyId=property['id']).execute()
                     for view in views['items']:
                         if view['id'] == view_id:
-                            return True
+                            return property['name'],True
     return False
-    # rsp = management.management().profiles().get(
-    #   accountId=account_id,
-    #   webPropertyId=web_property_id,
-    #   profileId=view_id).execute()
-    # for item in rsp['items']:
-    #     for web_propertys in item['webProperties']:
-    #         if web_propertys['id'] == web_property_id:
-    #             print(web_propertys)
-    #             return web_propertys['name']
-    # return 'erreur'
 
 def check_table_date(bq,projet_name,dataset_name,table_name,aggregation_level,view_id):
     query = f"SELECT max(date) FROM `{projet_name}.{dataset_name}.{table_name}` WHERE Aggregation = '{next(iter(aggregation_level))}' AND View_id = '{view_id}'"
@@ -426,8 +416,8 @@ def main(req):
     analytics = initialize_analyticsreporting(CREDENTIALS)# Initialisation de l'API GA
     bq = initialize_bigquery(CREDENTIALS, req['projectId'])# Initialisation de BQ
     
-    Web_Property_Name = check_ga4_permission(management,req['accountId'],req['webPropertyID'],req['viewId'])
-    if Web_Property_Name == False:
+    web_property_name,check_perm = check_ga4_permission(management,req['accountId'],req['webPropertyID'],req['viewId'])
+    if check_perm == False:
         return f"ko le crédential n'a pas à la vue : {req['viewId']}"
 
     """Mise en forme des dimensions et metrics"""
@@ -625,7 +615,7 @@ def main(req):
                 else:#Le rslt n'est pas échantillonné 
                     print("Résultat valide")
                     nombreRequêteExporter +=1
-                    data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],Web_Property_Name,aggregation_level)# Traitement des données (mise en dataFrame & changement des type de données)
+                    data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],web_property_name,aggregation_level)# Traitement des données (mise en dataFrame & changement des type de données)
                     # print(data)
                     addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
                     pageToken = verifPageToken(response)#On regarde si il y a un pageToken
