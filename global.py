@@ -10,7 +10,7 @@ import time
 import math
 import re
 
-CREDENTIALS = service_account.Credentials.from_service_account_file('key.json')
+CREDENTIALS = service_account.Credentials.from_service_account_file('key_mf.json')
 
 """Initialisation de l'API Managemet analytics"""
 def initialize_analyticsManagement(credentials):
@@ -403,6 +403,7 @@ def delete_data_from_bq(bq,projet_name,dataset_name,table_name,aggregation_level
     bq.query(query)
 
 def main(req):
+    timeOut = False
     stop = False
     start_time = time.monotonic()
     req = req.get_json()# Récupération des paramétres du body
@@ -706,12 +707,12 @@ def main(req):
                         end_time = time.monotonic()
                         if (end_time-start_time)/60 >= 50:
                             print(f"Time out bientôt arrêt forcer (ça va redémarré)")
-                            stop = True
+                            timeOut = True
                             startDateReq = endDateReq
                     previousPageToken = pageToken
-                if stop:
+                if stop or timeOut:
                     break
-            if stop:
+            if stop or timeOut:
                 break
             else:
                 print(f"Ajout terminé pour une aggrégation par {next(iter(aggregation_level))}")
@@ -723,6 +724,8 @@ def main(req):
         end_time += req['end_time']
     print(f"fini en {(end_time - start_time)/60} minutes")
     print(timeByAggregation)
-    if stop:
+    if timeOut:
         return "Timeout relancer"
+    elif stop:
+        return "Error"
     return 'ok'
