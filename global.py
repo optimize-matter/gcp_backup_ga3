@@ -30,7 +30,7 @@ def initialize_bigquery(credentials,project_id):
 
 def formatDimMet(dimensions,metrics,service):
     columns = service.metadata().columns().list(reportType='ga').execute()
-     # Récupération des id de tout les metrics et dims
+     # Récupération des id de tous les metrics et dims
     dimensionsId=[dimension['dimension'] for dimension in dimensions]
     metricsId=[metric['metric'] for metric in metrics]
 
@@ -47,15 +47,15 @@ def formatDimMet(dimensions,metrics,service):
     return dims,mets
 
 def formatCustomDimMet(dimensions,metrics,service,accountId,webPropertyId):
-    # Récupération des id de tout les metrics et dims du compte GA
+    # Récupération des id de tous les metrics et dims du compte GA
     dimensionsCustom = service.management().customDimensions().list(accountId=accountId,webPropertyId=webPropertyId).execute()
     metricsCustom = service.management().customMetrics().list(accountId=accountId,webPropertyId=webPropertyId).execute()
 
-    # Récupération des id de tout les metrics et dims du body
+    # Récupération des id de tous les metrics et dims du body
     dimensionsId=[dimension['dimension'] for dimension in dimensions]
     metricsId=[metric['metric'] for metric in metrics]
 
-    # Si le tableau les metrics et dimensions existe dans ga on les récupére
+    # Si dans le tableau des metrics et dimensions, celles-ci existent dans ga, on les récupére
     def checkDim(item):
         if item['id'] in dimensionsId:
             return True
@@ -67,15 +67,15 @@ def formatCustomDimMet(dimensions,metrics,service,accountId,webPropertyId):
         return False
     
     dims = list(filter(checkDim,dimensionsCustom['items']))
-    dims = [{'id':dims[i]['id'],'type':'STRING'} for i in range(len(dims))]#On fais un dico avec l'id et le type du met ou dims
+    dims = [{'id':dims[i]['id'],'type':'STRING'} for i in range(len(dims))]#On fait un dico avec l'id et le type du met ou dims
 
     met = list(filter(checkMet,metricsCustom['items']))
-    met = [{'id':met[i]['id'],'type':met[i]['type']} for i in range(len(met))]#On fais un dico avec l'id et le type du met ou dims
+    met = [{'id':met[i]['id'],'type':met[i]['type']} for i in range(len(met))]#On fait un dico avec l'id et le type du met ou dims
     return dims,met
 
 def createSchema(dimensions,metrics,dims):
     schema = []
-    #Tout ça pour ajouter dans le dico le nom des colonnes tel qu'on les veux 
+    #Tout ça pour ajouter dans le dico le nom des colonnes telles qu'on les veux 
     for dim in dims:
         for dimension in dimensions:
             if dim['id'] == dimension['dimension']:
@@ -144,7 +144,7 @@ def constructBody(VIEW_ID,startDate,endDate,dimensionLabel,metricsLabel,pageSize
             for key,value in aggregation_level.items():
                 dimId[index] = {"name":value}
                 if key == "Week":
-                    endDate+= datetime.timedelta(days=6)#On ajoute 6 jour pour prendre toute la semaine
+                    endDate+= datetime.timedelta(days=6)#On ajoute 6 jours pour prendre toute la semaine
                     if endDate > datetime.datetime.now():
                         endDate-= datetime.timedelta(days=7)
                 elif key == "Month":
@@ -260,7 +260,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
         for metricsHeader in report['columnHeader']['metricHeader']['metricHeaderEntries']:
             metricsName.append(metricsHeader['name'])
 
-        # Transformation des données en list de dico, peux importe l'ordre des dimensions quand on les à défini
+        # Transformation des données en listes de dico, peu importe l'ordre des dimensions quand on les a définies
         for index,r in enumerate(report['data']['rows']):
             row = {}
             dimensionsValue = r['dimensions']
@@ -286,7 +286,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
                 row.update({metricsName[i]:metricsValue[i]})
             row.update({"aggregation":next(iter(aggregation_level))})
             rows.append(row)
-    # Transformation de la list en dataFrame
+    # Transformation de la liste en dataFrame
     rows = pd.DataFrame(rows)
 
     # Transformation des types de données pour matcher avec BQ
@@ -304,7 +304,7 @@ def traitementDonnées(rsp,dimensionLabel,metricsLabel,view_id,Web_Property_Name
             #Transforme au format : HH:MM:SS
             rows[met['name']] = rows[met['name']].apply(lambda x: float_to_time(float(x)))
 
-    # Renomage des colonnes (pour retirer le ":ga")
+    # On renomme des colonnes (pour retirer le ":ga")
     rows.columns = dimensionsCol+metricsCol+["aggregation"]#"isoYearIsoWeek","yearMonth","isoYear"
     rows = rows.assign(view_id=[view_id]*len(rows))
     rows = rows.assign(web_property_name=[Web_Property_Name]*len(rows))
@@ -410,7 +410,7 @@ def main(req):
     """Vérification des différent paramétre du body"""
     if verifRequireRequest(req) != 'ok':
         return 'Erreur de paramétres'
-    clusteringFields,pageToken,startDate,endDate = verifOptionRequest(req)#Vérification et définition des paramétre optionnel
+    clusteringFields,pageToken,startDate,endDate = verifOptionRequest(req)#Vérification et définition des paramétres optionnels
     """Initialisation des API"""
     management = initialize_analyticsManagement(CREDENTIALS)# Initialisation de l'API Management
     metadata = initialize_analyticsMetadata(CREDENTIALS)# Initialisation de l'API MetaData
@@ -427,13 +427,13 @@ def main(req):
     FormatedDims += FormatedCustomDims
     FromatedMets += FromatedCustomMets
     allFormatedDimsAndMets = FormatedDims+FromatedMets
-    schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schema
+    schema = createSchema(req['dimensions'],req['metrics'],allFormatedDimsAndMets)#Création du schéma
     db = exist_dataset_table(bq, req['tableId'], req['datasetId'], req['projectId'],clusteringFields,req['dimensions'],schema)#Vérification du dataset et de la table, si elles existent pas on les crée
     """Nettoyage des variables inutiles"""
     del allFormatedDimsAndMets,schema,management,metadata,clusteringFields,FormatedDims,FromatedMets,FormatedCustomDims,FromatedCustomMets
     nombreRequête = 0 #Pour compter le nombre de requêtes  
     nombreRequêteExporter = 0 #Pour compter le nombre de requêtes  
-    rowsCount = 0 #Pour connaître le nbr de ligne
+    rowsCount = 0 #Pour connaître le nombre de lignes
     reportEndDate = None
     list_aggregation = [
         {"Day":"ga:date"},
@@ -463,7 +463,7 @@ def main(req):
                     startDateReq = datetime.datetime.combine(date_BQ, datetime.datetime.min.time()) + datetime.timedelta(days=1)
                 elif next(iter(aggregation_level)) == 'Week':
                     startDateReq = datetime.datetime.combine(date_BQ, datetime.datetime.min.time()) + relativedelta(weeks=1)
-                    #StartDateReq est tjr un lundi
+                    #StartDateReq est toujours un lundi
                     startDateReq = (startDateReq - datetime.timedelta(days=startDateReq.weekday()))
                 elif next(iter(aggregation_level)) == 'Month':
                     startDateReq = datetime.datetime.combine(date_BQ, datetime.datetime.min.time())
@@ -486,14 +486,14 @@ def main(req):
                 #Si reportEndDate est plus grand que date du jour -1 jour on retire 1 semaine
                 if reportEndDate >= endDateReq:
                     reportEndDate -= datetime.timedelta(days=7)
-                #Si startDateReq est plus grand que la date de début, c'est que les données son à jour
+                #Si startDateReq est plus grand que la date de début, c'est que les données sont à jour
                 if startDateReq >= reportEndDate:
                     print(f'Backup à jour pour une aggregation par {next(iter(aggregation_level))}')
                     startDateReq = endDateReq
             elif next(iter(aggregation_level)) == 'Month':
                 print("Report end date pour une aggregation MOIS",reportEndDate)
                 print("End date pour une aggregation MOIS",endDateReq)
-                #reportEndDate dans le cadre d'un mois est le début du mois donc 16/03/2023 deviens 01/03/2023
+                #reportEndDate dans le cadre d'un mois est le début du mois donc 16/03/2023 devient 01/03/2023
                 # reportEndDate = datetime.datetime(reportEndDate.year,reportEndDate.month,1)
                 #Si reportEndDate est plus grand que date du jour -1 jour on retire 1 mois
                 if reportEndDate >= endDateReq:
@@ -501,41 +501,41 @@ def main(req):
                         reportEndDate = datetime.datetime(reportEndDate.year - 1,12,1)
                     else:
                         reportEndDate = datetime.datetime(reportEndDate.year,reportEndDate.month - 1,1)
-                #Si startDateReq est plus grand que la date de début, c'est que les données son à jour
+                #Si startDateReq est plus grand que la date de début, c'est que les données sont à jour
                 if startDateReq >= reportEndDate:
                     print(f'Backup à jour pour une aggregation par {next(iter(aggregation_level))}')
                     startDateReq = endDateReq
                 print("Report end date pour une aggregation MOIS",reportEndDate)
             elif next(iter(aggregation_level)) == 'Year':
-                #reportEndDate dans le cadre d'une année est le début de l'année donc 16/03/2023 deviens 01/01/2023
+                #reportEndDate dans le cadre d'une année est le début de l'année donc 16/03/2023 devient 01/01/2023
                 reportEndDate = datetime.datetime(reportEndDate.year+1,1,1)
-                #Si reportEndDate est plus grand que date du jour -1 jour on retire 1 ans
+                #Si reportEndDate est plus grand que date du jour -1 jour on retire 1 an
                 if reportEndDate >= endDateReq:
                     reportEndDate = reportEndDate - relativedelta(years=1)
-                #Si startDateReq est plus grand que la date de début, c'est que les données son à jour
+                #Si startDateReq est plus grand que la date de début, c'est que les données sont à jour
                 if startDateReq >= reportEndDate:
                     print(f'Backup à jour pour une aggregation par {next(iter(aggregation_level))}')
                     startDateReq = endDateReq
 
-            endDateReq = reportEndDate # reportEndDate est la date qui va être découpé
+            endDateReq = reportEndDate # reportEndDate est la date qui va être découpée
             previousPageToken = None
-            while startDateReq.date() < endDateReq.date():#Enfin de boucle on assigne la date de fin du body à startDateReq et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrais
+            while startDateReq.date() < endDateReq.date():#Enfin de boucle on assigne la date de fin du body à startDateReq et dans la boucle si c'est pas échantillonné la date de fin du body ne change pas donc le résultat fini par être vrai
                 nombreRequête+=1
                 print(f'Backup en cours pour une aggregation par {next(iter(aggregation_level))}')
-                print("Dates concernées :",startDateReq, reportEndDate) # Date de récupération des premiére données utile en cas d'erreur
+                print("Dates concernées :",startDateReq, reportEndDate) # Date de récupération des premières données utiles en cas d'erreur
                 verif,response,nextDate = verifData(analytics,req['viewId'],startDateReq,reportEndDate,req['dimensions'],req['metrics'],pageToken,aggregation_level)
-                if verif == True:# Si le rslt est échantilloner 
+                if verif == True:# Si le rslt est échantillonné 
                     if next(iter(aggregation_level)) == 'Day':
                         if startDateReq == reportEndDate:
-                            # deltaDays = (reportEndDate - startDateReq).days # Nombre de jour entre les 2 dates
-                            # delatNewDate = deltaDays//2 # Nombre de jour divisé par 2 "//" assure qu'on récupére un entier
-                            # reportEndDate = startDateReq + datetime.timedelta(days=delatNewDate) # Nouvelle date = date de début + nombre de jour entre les dates diviser par 2
+                            # deltaDays = (reportEndDate - startDateReq).days # Nombre de jours entre les 2 dates
+                            # delatNewDate = deltaDays//2 # Nombre de jours divisé par 2 "//" assure qu'on récupére un entier
+                            # reportEndDate = startDateReq + datetime.timedelta(days=delatNewDate) # Nouvelle date = date de début + nombre de jours entre les dates divisé par 2
                             reportEndDate = reportEndDate + datetime.timedelta(days=1) # Plus un jour pour éviter que startDateReq = reportEndDate
                             startDateReq = startDateReq + datetime.timedelta(days=1) # Plus un jour pour éviter que startDateReq = reportEndDate
                         else:
-                            deltaDays = (reportEndDate - startDateReq).days # Nombre de jour entre les 2 dates
-                            delatNewDate = deltaDays//2 # Nombre de jour divisé par 2 "//" assure qu'on récupére un entier
-                            reportEndDate = startDateReq + datetime.timedelta(days=delatNewDate) # Nouvelle date = date de début + nombre de jour entre les dates diviser par 2
+                            deltaDays = (reportEndDate - startDateReq).days # Nombre de jours entre les 2 dates
+                            delatNewDate = deltaDays//2 # Nombre de jours divisé par 2 "//" assure qu'on récupére un entier
+                            reportEndDate = startDateReq + datetime.timedelta(days=delatNewDate) # Nouvelle date = date de début + nombre de jours entre les dates divisé par 2
                     elif next(iter(aggregation_level)) == 'Week':
                         if startDateReq == reportEndDate:
                             reportEndDate = reportEndDate + datetime.timedelta(days=7) # Plus un jour pour éviter que startDateReq = reportEndDate
@@ -543,7 +543,7 @@ def main(req):
                         else:
                             deltaDays = (reportEndDate.date()-startDateReq.date()).days
                             deltaWeeks = deltaDays//7 # Nombre de semaines entre les 2 dates
-                            delatNewDate = deltaWeeks//2 # Nombre de semaine divisé par 2 "//" assure qu'on récupére un entier
+                            delatNewDate = deltaWeeks//2 # Nombre de semaines divisé par 2 "//" assure qu'on récupére un entier
                             reportEndDate = startDateReq + relativedelta(weeks=delatNewDate)
                     elif next(iter(aggregation_level)) == 'Month':
                         if startDateReq == reportEndDate:
@@ -585,16 +585,16 @@ def main(req):
                     if next(iter(aggregation_level)) == 'Day':
                         # Pour pas de duplication sinon les données du 13/03/2023 seront en double car une fois en start_date et l'autre en end_date
                         startDateReq+= datetime.timedelta(days=1)
-                        #Si reportEndDate est plus grand que la date de début, c'est que les données son à jour
+                        #Si reportEndDate est plus grand que la date de début, c'est que les données sont à jour
                         if startDateReq > reportEndDate:
                             startDateReq = endDateReq
-                        #On prend plus de jour si le pageToken est inférieur à 800000
+                        #On prend plus de jours si le pageToken est inférieur à 800000
                         if previousPageToken != None:
                             if int(previousPageToken) < 800000:
                                 reportEndDate+= datetime.timedelta(days=1)
                                 previousPageToken = pageToken
                     elif next(iter(aggregation_level)) == 'Week':
-                        #Comme reportEndDate dans les autres aggrégation que day = -1 jour, ici on lui rend le jour pour débuté dans la bonne semaine, mois, année
+                        #Comme reportEndDate dans les autres aggrégations que day = -1 jour, ici on lui rend le jour pour débuter dans la bonne semaine, mois, année
                         startDateReq+= datetime.timedelta(days=7)
                         reportEndDate+= datetime.timedelta(days=7)
                         if reportEndDate > endDateReq:
@@ -619,23 +619,23 @@ def main(req):
                     data = traitementDonnées(response,req['dimensions'],req['metrics'],req['viewId'],web_property_name,aggregation_level)# Traitement des données (mise en dataFrame & changement des type de données)
                     # print(data)
                     addToBQ(bq,req['projectId'],req['datasetId'],req['tableId'],data,req['dimensions'])# Ajout du data frame dans BQ 
-                    pageToken = verifPageToken(response)#On regarde si il y a un pageToken
+                    pageToken = verifPageToken(response)#On regarde s'il y a un pageToken
                     print("Prochaine page :",pageToken,"pour le compte :", req['webPropertyID'],"sur la vue",req['viewId'],"un export d'",req['tableId'], "pour un niveau d'aggrégation",next(iter(aggregation_level)))
-                    if pageToken == None:#Si il n'y en a pas 
+                    if pageToken == None:#S'il n'y en a pas 
                         rowsCount+= response['reports'][0]['data']['rowCount']
-                        startDateReq = reportEndDate #La précédente date de fin devins la date de début
-                        reportEndDate = nextDate # ReportEndDate deviens la date suivantqui est calculé dans verifData
+                        startDateReq = reportEndDate #La précédente date de fin devient la date de début
+                        reportEndDate = nextDate # ReportEndDate devient la date suivante qui est calculée dans verifData
                         if next(iter(aggregation_level)) == 'Day':
                             # Pour pas de duplication sinon les données du 13/03/2023 seront en double car une fois en start_date et l'autre en end_date
                             startDateReq+= datetime.timedelta(days=1)
                             reportEndDate+= datetime.timedelta(days=1)
-                            #Si reportEndDate est plus grand que endDate alors c'est la derniére requête
+                            #Si reportEndDate est plus grand que endDate alors c'est la dernière requête
                             if reportEndDate >= endDateReq:
                                 reportEndDate = endDateReq
-                            #Si reportEndDate est plus grand que la date de début, c'est que les données son à jour
+                            #Si reportEndDate est plus grand que la date de début, c'est que les données sont à jour
                             if startDateReq > reportEndDate:
                                 startDateReq = endDateReq
-                            #On prend plus de jour si le pageToken est inférieur à 800000
+                            #On prend plus de jours si le pageToken est inférieur à 800000
                             if (previousPageToken != None or nombreRequêteExporter>1) and (reportEndDate < endDateReq):
                                 if previousPageToken == None and reportEndDate < endDateReq:
                                     reportEndDate+= datetime.timedelta(days=1)
@@ -648,7 +648,7 @@ def main(req):
                                 else:
                                     previousPageToken = pageToken
                         elif next(iter(aggregation_level)) == 'Week':
-                            #Comme reportEndDate dans les autres aggrégation que day = -1 jour, ici on lui rend le jour pour débuté dans la bonne semaine, mois, année
+                            #Comme reportEndDate dans les autres aggrégations que day = -1 jour, ici on lui rend le jour pour débuter dans la bonne semaine, mois, année
                             startDateReq+= datetime.timedelta(days=7)
                             reportEndDate+= datetime.timedelta(days=7)
                             if reportEndDate > endDateReq:
