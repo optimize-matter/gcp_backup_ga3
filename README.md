@@ -7,10 +7,15 @@ Copier le script et le requirement dans une cloud function ayant 1G de mémoire.
 ## Features
 
 ✅ Vérification de l'existence du dataset et de la table
+
 ✅ Création automatique du dataset et de la table
+
 ✅ Création automatique de schémas de données
+
 ✅ Sélection des dims et métriques désirés
+
 ✅ Possibilité de reprendre une backup arrêté à un pageToken ou à une date (manuellement)
+
 ✅ Prise en compte des customs Dimensions 
 
 ## 📄 Doc  
